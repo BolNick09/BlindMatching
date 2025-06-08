@@ -15,11 +15,13 @@ import
   FcHome,
 } from "react-icons/fc";
 
-function Card({ icon: IconComponent, isFlipped, onClick }) {
+function Card({ icon: IconComponent, isFlipped, onClick }) 
+{
   return (
     <div 
       onClick={onClick}
-      style={{
+      style=
+      {{
         width: '100px', 
         height: '100px', 
         backgroundColor: isFlipped ? 'transparent' : 'white',
@@ -39,40 +41,6 @@ function Card({ icon: IconComponent, isFlipped, onClick }) {
 
 function App() 
 {
-console.clear();
-
-const counter = 
-{
-  0: 0,
-  1: 0,
-  2: 0,
-  3: 0,
-  4: 0,
-  5: 0,
-  6: 0,
-  7: 0,
-  8: 0
-}
-
-function randint(maxn) 
-{
-  let result = -1;
-  do 
-  {
-    result = Math.floor(Math.random() * (maxn - 1));
-    console.log (`result = ${result}, counter = ${counter[result]}`)
-
-    if (counter[result] < 2)
-    {
-      counter[result]++;   
-      return result;    
-    }
-
-  }
-  while (true); 
-
-}
-
   const icons = 
   [
     FcAlarmClock, 
@@ -84,97 +52,104 @@ function randint(maxn)
     FcLinux,
     FcHome,
   ];
-  const iconsR1 = 
-  [
-    icons[randint(9)], 
-    icons[randint(9)],
-    icons[randint(9)],
-    icons[randint(9)]
-  ]
-  const iconsR2 = 
-  [
-    icons[randint(9)], 
-    icons[randint(9)],
-    icons[randint(9)],
-    icons[randint(9)]
-  ]
-  const iconsR3 = 
-  [
-    icons[randint(9)], 
-    icons[randint(9)],
-    icons[randint(9)],
-    icons[randint(9)]
-  ]
-  const iconsR4 = 
-  [
-    icons[randint(9)], 
-    icons[randint(9)],
-    icons[randint(9)],
-    icons[randint(9)]
-  ]
 
+  // Изменил логику создания перемешанной коллекции
+  const createShuffledIcons = () => 
+  {
+    const pairs = [...icons, ...icons];
+    return pairs.sort(() => Math.random() - 0.5);
+  };
+  //Cards - текущее значение состояния, setCards - функция изменения состояния
+  //createShuffledIcons - задание начального состояния
+  const [cards, setCards] = useState(createShuffledIcons().map(icon => 
+  ({
+    icon,
+    isFlipped: false,
+    isMatched: false
+  })));
+  const [flippedIndices, setFlippedIndices] = useState([]);
 
+  const handleCardClick = (index) => 
+  {
+    //Пропуск, если уже открыты
+    if (cards[index].isFlipped || flippedIndices.length >= 2 || cards[index].isMatched) 
+      return;
+    
+
+    const newCards = [...cards];
+    newCards[index].isFlipped = true;
+    setCards(newCards);
+
+    const newFlippedIndices = [...flippedIndices, index];
+    setFlippedIndices(newFlippedIndices);
+
+    //Проверка на совпадение
+    if (newFlippedIndices.length === 2) 
+    {
+      const [firstIndex, secondIndex] = newFlippedIndices;
+      // Совпадение - оставляю открытыми
+
+      if (cards[firstIndex].icon === cards[secondIndex].icon) 
+      {        
+        setTimeout(() => 
+        {
+          setCards(prevCards => 
+            prevCards.map((card, i) => 
+              i === firstIndex || i === secondIndex 
+                ? { ...card, isMatched: true } 
+                : card
+            )
+          );
+          setFlippedIndices([]);
+        }, 500);
+      } 
+      else 
+      {
+        setTimeout(() => 
+        {
+          setCards(prevCards => 
+            prevCards.map((card, i) => 
+              newFlippedIndices.includes(i) && !card.isMatched
+                ? { ...card, isFlipped: false } 
+                : card
+            )
+          );
+          setFlippedIndices([]);
+        }, 1000);
+      }
+    }
+  };
+
+  const resetGame = () => 
+  {
+    setCards(createShuffledIcons().map(icon => 
+    ({
+      icon,
+      isFlipped: false,
+      isMatched: false
+    })));
+    setFlippedIndices([]);
+  };
 
   return (
     <>
-    <div>
-    {
-      iconsR1.map
-      (
-        (IconComponent, index) => 
-          (
-            <span key={index} style={{ fontSize: '5rem' }}>
-              <IconComponent/>
-            </span>
-          )
-      )
-    }
-    </div>
-    <div>
-    {
-      iconsR2.map
-      (
-        (IconComponent, index) => 
-          (
-            <span key={index} style={{ fontSize: '5rem' }}>
-              <IconComponent/>
-            </span>
-          )
-      )
-    }
-    </div>
-    <div>
-    {
-      iconsR3.map
-      (
-        (IconComponent, index) => 
-          (
-            <span key={index} style={{ fontSize: '5rem' }}>
-              <IconComponent/>
-            </span>
-          )
-      )
-    }
-    </div>
-    <div>
-    {
-      iconsR4.map
-      (
-        (IconComponent, index) => 
-          (
-            <span key={index} style={{ fontSize: '5rem' }}>
-              <IconComponent/>
-            </span>
-          )
-      )
-    }
-    </div>
-    <div>
-      <PlaceHolder  />
-    </div>
-    
+      <div style={{ marginBottom: '20px' }}>
+        {
+          cards.map((card, index) => 
+            (
+              <Card
+                key={index}
+                icon={card.icon}
+                isFlipped={card.isFlipped || card.isMatched}
+                onClick={() => handleCardClick(index)}
+              />
+            ))}
+      </div>
+      <button onClick={resetGame} style={{ padding: '10px 20px', fontSize: '1rem' }}>
+        Новая игра
+      </button>
     </>
   );
 }
 
-export default App
+export default App;
