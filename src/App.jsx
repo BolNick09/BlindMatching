@@ -9,6 +9,9 @@ import Home from './Pages/Home'
 import NavBar from './Pages/NavBar'
 import ResultsTable from './Pages/ResultsTable'
 
+import { useSelector, useDispatch } from 'react-redux'
+import { saveClickCount } from './slice'
+
 import 
 { 
   FcAlarmClock, 
@@ -85,7 +88,11 @@ function Game()
   }
   )));
   const [flippedIndices, setFlippedIndices] = useState([]);
-  const [clicks, setClicks] = useState(0); // Счетчик кликов
+
+  // const [clicks, setClicks] = useState(0); // Счетчик кликов
+  const clickCount = useSelector((state) => state.save_click_count.value)
+  const dispatch = useDispatch()
+
   const [time, setTime] = useState(0); // Счетчик времени (секунды)
   const [gameCompleted, setGameCompleted] = useState(false); // Флаг завершения игры
   const [timerActive, setTimerActive] = useState(false); // Флаг активности таймера
@@ -121,11 +128,13 @@ function Game()
     
 
     // Запуск таймера при первом клике
-    if (!timerActive && clicks === 0) 
-      setTimerActive(true);
-    
+    if (!timerActive && clickCount === 0) 
+      setTimerActive(true);   
 
-    setClicks(prevClicks => prevClicks + 1);
+    // setClicks(prevClicks => prevClicks + 1);  
+    const newClickCount = clickCount + 1
+    
+    dispatch(saveClickCount(newClickCount))
 
     const newCards = [...cards];
     newCards[index].isFlipped = true;
@@ -197,7 +206,11 @@ function Game()
       isMatched: false
     })));
     setFlippedIndices([]);
-    setClicks(0);
+
+    // setClicks(0);
+    dispatch(saveClickCount(0))
+
+
     setTime(0);
     setGameCompleted(false);
     setTimerActive(false);
@@ -217,7 +230,7 @@ function Game()
       </div>
       <div style={{ margin: '20px 0' }}>
         <p>Время: {time} сек.</p>
-        <p>Клики: {clicks}</p>
+        <p>Клики (Redux): {clickCount}</p>
         {gameCompleted && <p>Игра завершена! Очки: {Math.max(1000 - (time * 10 + clicks * 5))}</p>}
       </div>
       <button onClick={resetGame} style={{ padding: '10px 20px', fontSize: '1rem' }}>
