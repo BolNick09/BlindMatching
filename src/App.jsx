@@ -2,6 +2,11 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { createBrowserRouter, RouterProvider, Outlet} from "react-router-dom"
+import DeadEnd from './Pages/DeadEnd'
+import Home from './Pages/Home'
+import NavBar from './Pages/NavBar'
+import ResultsTable from './Pages/ResultsTable'
 
 import 
 { 
@@ -14,6 +19,17 @@ import
   FcLinux,
   FcHome,
 } from "react-icons/fc";
+
+function NavbarWrapper()
+{
+    return (
+    <div>
+        <NavBar/>
+        <Outlet/>
+    </div>
+    )
+}
+
 
 function Card({ icon: IconComponent, isFlipped, onClick }) 
 {
@@ -38,8 +54,7 @@ function Card({ icon: IconComponent, isFlipped, onClick })
     </div>
   );
 }
-
-function App() 
+function Game()
 {
   const icons = 
   [
@@ -150,6 +165,40 @@ function App()
       </button>
     </>
   );
+}
+const router = createBrowserRouter([
+    {
+        path: "/",
+        element: <NavbarWrapper/>,
+        children:[
+            {
+                path: "/",
+                element: <Home />  // Root?
+            },
+            {
+                path: "/game",
+                element: <Game />
+            },
+            {
+              path: "/results",
+              element: <ResultsTable />
+            },
+            {
+                path: "*",
+                element: <DeadEnd />
+            },
+        ]
+      }
+    ]
+  )
+
+function App() 
+{
+  return (
+    <div>
+      <RouterProvider router={router}/>
+    </div>
+  )
 }
 
 export default App;
