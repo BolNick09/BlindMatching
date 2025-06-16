@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
@@ -54,7 +55,8 @@ function Card({ icon: IconComponent, isFlipped, onClick })
     </div>
   );
 }
-function Game()
+
+function Game() 
 {
   const icons = 
   [
@@ -68,28 +70,62 @@ function Game()
     FcHome,
   ];
 
-  // Изменил логику создания перемешанной коллекции
   const createShuffledIcons = () => 
   {
     const pairs = [...icons, ...icons];
     return pairs.sort(() => Math.random() - 0.5);
   };
-  //Cards - текущее значение состояния, setCards - функция изменения состояния
-  //createShuffledIcons - задание начального состояния
+
   const [cards, setCards] = useState(createShuffledIcons().map(icon => 
-  ({
+  (
+    {
     icon,
     isFlipped: false,
     isMatched: false
-  })));
+  }
+  )));
   const [flippedIndices, setFlippedIndices] = useState([]);
+  const [clicks, setClicks] = useState(0); // Счетчик кликов
+  const [time, setTime] = useState(0); // Счетчик времени (секунды)
+  const [gameCompleted, setGameCompleted] = useState(false); // Флаг завершения игры
+  const [timerActive, setTimerActive] = useState(false); // Флаг активности таймера
+
+  // Запуск таймера при первом клике
+  useEffect(() => 
+  {
+    if (timerActive) 
+    {
+      const timer = setInterval(() => 
+      {
+        setTime(prevTime => prevTime + 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [timerActive]);
+
+  // Проверка на завершение игры
+  useEffect(() => 
+  {
+    if (cards.every(card => card.isMatched)) 
+    {
+      setGameCompleted(true);
+      setTimerActive(false);
+      saveResults();
+    }
+  }, [cards]);
 
   const handleCardClick = (index) => 
   {
-    //Пропуск, если уже открыты
-    if (cards[index].isFlipped || flippedIndices.length >= 2 || cards[index].isMatched) 
+    if (cards[index].isFlipped || flippedIndices.length >= 2 || cards[index].isMatched)     
       return;
     
+
+    // Запуск таймера при первом клике
+    if (!timerActive && clicks === 0) 
+      setTimerActive(true);
+    
+
+    setClicks(prevClicks => prevClicks + 1);
 
     const newCards = [...cards];
     newCards[index].isFlipped = true;
@@ -98,20 +134,17 @@ function Game()
     const newFlippedIndices = [...flippedIndices, index];
     setFlippedIndices(newFlippedIndices);
 
-    //Проверка на совпадение
     if (newFlippedIndices.length === 2) 
     {
       const [firstIndex, secondIndex] = newFlippedIndices;
-      // Совпадение - оставляю открытыми
-
       if (cards[firstIndex].icon === cards[secondIndex].icon) 
-      {        
+      {
         setTimeout(() => 
         {
-          setCards(prevCards => 
-            prevCards.map((card, i) => 
-              i === firstIndex || i === secondIndex 
-                ? { ...card, isMatched: true } 
+          setCards(prevCards =>
+            prevCards.map((card, i) =>
+              i === firstIndex || i === secondIndex
+                ? { ...card, isMatched: true }
                 : card
             )
           );
@@ -122,10 +155,10 @@ function Game()
       {
         setTimeout(() => 
         {
-          setCards(prevCards => 
-            prevCards.map((card, i) => 
+          setCards(prevCards =>
+            prevCards.map((card, i) =>
               newFlippedIndices.includes(i) && !card.isMatched
-                ? { ...card, isFlipped: false } 
+                ? { ...card, isFlipped: false }
                 : card
             )
           );
@@ -135,30 +168,57 @@ function Game()
     }
   };
 
+  const saveResults = () => 
+  {
+    // Подсчет очков
+    const score = Math.max(1000 - (time * 10 + clicks * 5), 0);
+
+    const newResult = 
+    {
+      score,
+      date: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      time,
+      clicks
+    };
+
+    // Получение текущих результатов из localStorage
+    const storedResults = JSON.parse(localStorage.getItem('memoryGameResults')) || [];
+    const updatedResults = [...storedResults, newResult];
+
+    // Сохранение обновленных результатов
+    localStorage.setItem('memoryGameResults', JSON.stringify(updatedResults));
+  };
+
   const resetGame = () => 
   {
-    setCards(createShuffledIcons().map(icon => 
-    ({
+    setCards(createShuffledIcons().map(icon => ({
       icon,
       isFlipped: false,
       isMatched: false
     })));
     setFlippedIndices([]);
+    setClicks(0);
+    setTime(0);
+    setGameCompleted(false);
+    setTimerActive(false);
   };
 
   return (
     <>
       <div style={{ marginBottom: '20px' }}>
-        {
-          cards.map((card, index) => 
-            (
-              <Card
-                key={index}
-                icon={card.icon}
-                isFlipped={card.isFlipped || card.isMatched}
-                onClick={() => handleCardClick(index)}
-              />
-            ))}
+        {cards.map((card, index) => (
+          <Card
+            key={index}
+            icon={card.icon}
+            isFlipped={card.isFlipped || card.isMatched}
+            onClick={() => handleCardClick(index)}
+          />
+        ))}
+      </div>
+      <div style={{ margin: '20px 0' }}>
+        <p>Время: {time} сек.</p>
+        <p>Клики: {clicks}</p>
+        {gameCompleted && <p>Игра завершена! Очки: {Math.max(1000 - (time * 10 + clicks * 5))}</p>}
       </div>
       <button onClick={resetGame} style={{ padding: '10px 20px', fontSize: '1rem' }}>
         Новая игра
@@ -200,5 +260,6 @@ function App()
     </div>
   )
 }
+
 
 export default App;

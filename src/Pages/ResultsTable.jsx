@@ -4,25 +4,22 @@ import { useEffect } from 'react';
 export default function ResultsTable() 
 {
   const [results, setResults] = useState([]);
-
   useEffect(() => 
   {
-    const dbgResults = 
-    [
-        { score: 150, date: '2023-05-15 14:30:22', time: 45, clicks: 30 },
-        { score: 200, date: '2023-05-16 10:15:33', time: 50, clicks: 40 },
-        { score: 75, date: '2023-05-17 18:45:12', time: 30, clicks: 25 },
-        { score: 300, date: '2023-05-18 09:20:01', time: 60, clicks: 50 },
-        { score: 180, date: '2023-05-19 16:10:45', time: 40, clicks: 45 }
-    ];
-
-
-    localStorage.setItem('memoryGameResults', JSON.stringify(dbgResults));
-
-
-
-    const storedResults = JSON.parse(localStorage.getItem('memoryGameResults'));
+    
+    const storedResults = JSON.parse(localStorage.getItem('memoryGameResults')) || [];
     setResults(storedResults.sort((a, b) => b.score - a.score));
+    
+
+    // const dbgResults = 
+    // [
+    //   { score: 150, date: '2023-05-15 14:30:22', time: 45, clicks: 30 },
+    //   { score: 200, date: '2023-05-16 10:15:33', time: 50, clicks: 40 },
+    //   { score: 75, date: '2023-05-17 18:45:12', time: 30, clicks: 25 },
+    //   { score: 300, date: '2023-05-18 09:20:01', time: 60, clicks: 50 },
+    //   { score: 180, date: '2023-05-19 16:10:45', time: 40, clicks: 45 }
+    // ];
+    // localStorage.setItem('memoryGameResults', JSON.stringify(dbgResults)); 
   }, []);
 
   return (
