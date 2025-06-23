@@ -99,17 +99,28 @@ function Game()
 
   const dispatch = useDispatch()
   // Запуск таймера при первом клике
-  useEffect(() => 
+useEffect(() => {
+  // Запуск таймера если:
+  // 1. Игра не завершена
+  // 2. Есть хотя бы один клик
+  // 3. Таймер не активен
+  if (!gameCompleted && clickCount > 0 && !timerActive) 
+    setTimerActive(true);  
+
+  let timer;
+  if (timerActive) 
   {
-    if (timerActive) 
+    timer = setInterval(() => 
     {
-      const timer = setInterval(() => 
-      {
-        dispatch(saveGlobalTime(globalTime + 1)); 
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [timerActive, globalTime]);
+      dispatch(saveGlobalTime(globalTime + 1));
+    }, 1000);
+  }
+
+  return () => 
+  {
+    if (timer) clearInterval(timer);
+  };
+}, [timerActive, gameCompleted, clickCount, globalTime, dispatch]);
 
   // Проверка на завершение игры
   useEffect(() => 
