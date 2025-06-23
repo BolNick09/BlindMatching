@@ -5,6 +5,6 @@ export default configureStore
 ({
     reducer: 
     {
-        save_click_count: mySlice
+        reduceSaver: mySlice
     }
 })

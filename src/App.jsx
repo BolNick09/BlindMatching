@@ -10,7 +10,7 @@ import NavBar from './Pages/NavBar'
 import ResultsTable from './Pages/ResultsTable'
 
 import { useSelector, useDispatch } from 'react-redux'
-import { saveClickCount } from './slice'
+import { saveClickCount, saveGlobalTime, resetGameState } from './slice';
 
 import 
 { 
@@ -89,14 +89,15 @@ function Game()
   )));
   const [flippedIndices, setFlippedIndices] = useState([]);
 
-  // const [clicks, setClicks] = useState(0); // Счетчик кликов
-  const clickCount = useSelector((state) => state.save_click_count.value)
-  const dispatch = useDispatch()
-
-  const [time, setTime] = useState(0); // Счетчик времени (секунды)
+  // const [time, setTime] = useState(0); // Счетчик времени (секунды)
   const [gameCompleted, setGameCompleted] = useState(false); // Флаг завершения игры
+  const clickCount = useSelector((state) => state.reduceSaver.clicks)
+  const globalTime = useSelector((state) => state.reduceSaver.globalTime)
+
+
   const [timerActive, setTimerActive] = useState(false); // Флаг активности таймера
 
+  const dispatch = useDispatch()
   // Запуск таймера при первом клике
   useEffect(() => 
   {
@@ -104,11 +105,11 @@ function Game()
     {
       const timer = setInterval(() => 
       {
-        setTime(prevTime => prevTime + 1);
+        dispatch(saveGlobalTime(globalTime + 1)); 
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [timerActive]);
+  }, [timerActive, globalTime]);
 
   // Проверка на завершение игры
   useEffect(() => 
@@ -130,10 +131,8 @@ function Game()
     // Запуск таймера при первом клике
     if (!timerActive && clickCount === 0) 
       setTimerActive(true);   
-
-    // setClicks(prevClicks => prevClicks + 1);  
-    const newClickCount = clickCount + 1
-    
+ 
+    const newClickCount = clickCount + 1    
     dispatch(saveClickCount(newClickCount))
 
     const newCards = [...cards];
@@ -177,44 +176,34 @@ function Game()
     }
   };
 
-  const saveResults = () => 
+const saveResults = () => 
+{
+  const score = Math.max(1000 - (globalTime * 10 + clickCount * 5), 0);
+
+  const newResult = 
   {
-    // Подсчет очков
-    const score = Math.max(1000 - (time * 10 + clicks * 5), 0);
-
-    const newResult = 
-    {
-      score,
-      date: new Date().toISOString().replace('T', ' ').slice(0, 19),
-      time,
-      clicks
-    };
-
-    // Получение текущих результатов из localStorage
-    const storedResults = JSON.parse(localStorage.getItem('memoryGameResults')) || [];
-    const updatedResults = [...storedResults, newResult];
-
-    // Сохранение обновленных результатов
-    localStorage.setItem('memoryGameResults', JSON.stringify(updatedResults));
+    score,
+    date: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    time: globalTime,
+    clicks: clickCount
   };
 
-  const resetGame = () => 
-  {
-    setCards(createShuffledIcons().map(icon => ({
-      icon,
-      isFlipped: false,
-      isMatched: false
-    })));
-    setFlippedIndices([]);
+  const storedResults = JSON.parse(localStorage.getItem('memoryGameResults')) || [];
+  localStorage.setItem('memoryGameResults', JSON.stringify([...storedResults, newResult]));
+};
 
-    // setClicks(0);
-    dispatch(saveClickCount(0))
-
-
-    setTime(0);
-    setGameCompleted(false);
-    setTimerActive(false);
-  };
+const resetGame = () => 
+{
+  setCards(createShuffledIcons().map(icon => ({
+    icon,
+    isFlipped: false,
+    isMatched: false
+  })));
+  setFlippedIndices([]);
+  dispatch(resetGameState());
+  setGameCompleted(false);
+  setTimerActive(false);
+};
 
   return (
     <>
@@ -229,9 +218,9 @@ function Game()
         ))}
       </div>
       <div style={{ margin: '20px 0' }}>
-        <p>Время: {time} сек.</p>
-        <p>Клики (Redux): {clickCount}</p>
-        {gameCompleted && <p>Игра завершена! Очки: {Math.max(1000 - (time * 10 + clicks * 5))}</p>}
+        <p>Время: {globalTime} сек.</p>
+        <p>Клики: {clickCount}</p>
+        {gameCompleted && <p>Игра завершена! Очки: {Math.max(1000 - (globalTime * 10 + clickCount * 5))}</p>}
       </div>
       <button onClick={resetGame} style={{ padding: '10px 20px', fontSize: '1rem' }}>
         Новая игра
