@@ -94,14 +94,6 @@ function Game()
         icon: icons.find(icon => icon.name === card.iconName) || icons[0]
       }));
     }
-  if (isGameActive && gameField) 
-  {
-    return gameField.map(card => 
-    ({
-      ...card,
-      icon: icons.find(icon => icon.name === card.iconName) || icons[0]
-    }));
-  }
 
   const pairs = [...icons, ...icons];
   const shuffled = pairs.sort(() => Math.random() - 0.5);
