@@ -10,7 +10,13 @@ import NavBar from './Pages/NavBar'
 import ResultsTable from './Pages/ResultsTable'
 
 import { useSelector, useDispatch } from 'react-redux'
-import { saveClickCount, saveGlobalTime, resetGameState } from './slice';
+import 
+{ 
+  saveClickCount, 
+  saveGlobalTime, 
+  saveGameField, 
+  resetGameState 
+} from './slice';
 
 import 
 { 
@@ -73,54 +79,81 @@ function Game()
     FcHome,
   ];
 
-  const createShuffledIcons = () => 
-  {
-    const pairs = [...icons, ...icons];
-    return pairs.sort(() => Math.random() - 0.5);
-  };
 
-  const [cards, setCards] = useState(createShuffledIcons().map(icon => 
-  (
+  const { clicks, globalTime, gameField, isGameActive } = useSelector(state => state.reduceSaver);
+  const dispatch = useDispatch();
+
+
+  const initializeGame = () => 
+  {
+    if (isGameActive && Array.isArray(gameField) && gameField.length > 0) 
     {
+      return gameField.map(card => 
+      ({
+        ...card,
+        icon: icons.find(icon => icon.name === card.iconName) || icons[0]
+      }));
+    }
+  if (isGameActive && gameField) 
+  {
+    return gameField.map(card => 
+    ({
+      ...card,
+      icon: icons.find(icon => icon.name === card.iconName) || icons[0]
+    }));
+  }
+
+  const pairs = [...icons, ...icons];
+  const shuffled = pairs.sort(() => Math.random() - 0.5);
+  return shuffled.map(icon => 
+  ({
     icon,
     isFlipped: false,
     isMatched: false
-  }
-  )));
+  }));
+};
+
+  const [cards, setCards] = useState(initializeGame());
   const [flippedIndices, setFlippedIndices] = useState([]);
+  const [gameCompleted, setGameCompleted] = useState(false);
+  const [timerActive, setTimerActive] = useState(isGameActive);
 
-  // const [time, setTime] = useState(0); // Счетчик времени (секунды)
-  const [gameCompleted, setGameCompleted] = useState(false); // Флаг завершения игры
-  const clickCount = useSelector((state) => state.reduceSaver.clicks)
-  const globalTime = useSelector((state) => state.reduceSaver.globalTime)
-
-
-  const [timerActive, setTimerActive] = useState(false); // Флаг активности таймера
-
-  const dispatch = useDispatch()
-  // Запуск таймера при первом клике
+  // Сохранение состояния игры при изменении
 useEffect(() => {
-  // Запуск таймера если:
-  // 1. Игра не завершена
-  // 2. Есть хотя бы один клик
-  // 3. Таймер не активен
-  if (!gameCompleted && clickCount > 0 && !timerActive) 
-    setTimerActive(true);  
+  dispatch(saveGameField({
+    cards: cards.map(card => ({
+      ...card,
+      iconName: card.icon.name
+    })),
+    flippedIndices,
+    gameCompleted
+  }));
+}, [cards, flippedIndices, gameCompleted, dispatch]);
 
-  let timer;
-  if (timerActive) 
+  // Запуск таймера при первом клике
+  useEffect(() => 
   {
-    timer = setInterval(() => 
+    // Запуск таймера если:
+    // 1. Игра не завершена
+    // 2. Есть хотя бы один клик
+    // 3. Таймер не активен
+    if (!gameCompleted && clicks > 0 && !timerActive) 
+      setTimerActive(true);  
+
+    let timer;
+    if (timerActive) 
     {
-      dispatch(saveGlobalTime(globalTime + 1));
-    }, 1000);
-  }
+      timer = setInterval(() => 
+      {
+        dispatch(saveGlobalTime(globalTime + 1));
+      }, 1000);
+    }
 
-  return () => 
-  {
-    if (timer) clearInterval(timer);
-  };
-}, [timerActive, gameCompleted, clickCount, globalTime, dispatch]);
+    return () => 
+    {
+      if (timer) clearInterval(timer);
+    };
+}, [timerActive, gameCompleted, clicks , globalTime, dispatch]);
 
   // Проверка на завершение игры
   useEffect(() => 
@@ -140,10 +173,10 @@ useEffect(() => {
     
 
     // Запуск таймера при первом клике
-    if (!timerActive && clickCount === 0) 
+    if (!timerActive && clicks === 0) 
       setTimerActive(true);   
  
-    const newClickCount = clickCount + 1    
+    const newClickCount = clicks + 1    
     dispatch(saveClickCount(newClickCount))
 
     const newCards = [...cards];
@@ -189,14 +222,14 @@ useEffect(() => {
 
 const saveResults = () => 
 {
-  const score = Math.max(1000 - (globalTime * 10 + clickCount * 5), 0);
+  const score = Math.max(1000 - (globalTime * 10 + clicks * 5), 0);
 
   const newResult = 
   {
     score,
     date: new Date().toISOString().replace('T', ' ').slice(0, 19),
     time: globalTime,
-    clicks: clickCount
+    clicks: clicks
   };
 
   const storedResults = JSON.parse(localStorage.getItem('memoryGameResults')) || [];
@@ -205,21 +238,27 @@ const saveResults = () =>
 
 const resetGame = () => 
 {
-  setCards(createShuffledIcons().map(icon => ({
-    icon,
-    isFlipped: false,
-    isMatched: false
-  })));
-  setFlippedIndices([]);
-  dispatch(resetGameState());
-  setGameCompleted(false);
-  setTimerActive(false);
-};
+    const pairs = [...icons, ...icons];
+    const shuffled = pairs.sort(() => Math.random() - 0.5);
+    setCards(shuffled.map(icon => 
+    ({
+      icon,
+      isFlipped: false,
+      isMatched: false
+    })));
+    
+    setFlippedIndices([]);
+    dispatch(resetGameState());
+    setGameCompleted(false);
+    setTimerActive(false);
+  };
+
 
   return (
     <>
       <div style={{ marginBottom: '20px' }}>
-        {cards.map((card, index) => (
+        {cards.map((card, index) => 
+        (
           <Card
             key={index}
             icon={card.icon}
@@ -230,8 +269,8 @@ const resetGame = () =>
       </div>
       <div style={{ margin: '20px 0' }}>
         <p>Время: {globalTime} сек.</p>
-        <p>Клики: {clickCount}</p>
-        {gameCompleted && <p>Игра завершена! Очки: {Math.max(1000 - (globalTime * 10 + clickCount * 5))}</p>}
+        <p>Клики: {clicks}</p>
+        {gameCompleted && <p>Игра завершена! Очки: {Math.max(1000 - (globalTime * 10 + clicks * 5))}</p>}
       </div>
       <button onClick={resetGame} style={{ padding: '10px 20px', fontSize: '1rem' }}>
         Новая игра

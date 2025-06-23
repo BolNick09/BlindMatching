@@ -5,7 +5,9 @@ export const mySlice = createSlice({
     initialState:
     {
         clicks: 0,
-        globalTime:0
+        globalTime:0,
+        gameField: [],
+        isGameActive: false 
     },
     reducers:
     {
@@ -21,10 +23,31 @@ export const mySlice = createSlice({
         {
             state.clicks = 0;
             state.globalTime = 0;
+        },
+        saveGameField: (state, action) => 
+        {
+            if (Array.isArray(action.payload?.cards)) 
+            {
+                state.gameField = action.payload.cards;
+                state.isGameActive = true;
+            }
+        },
+        resetGameState: (state) => 
+        {
+            state.clicks = 0;
+            state.globalTime = 0;
+            state.gameField = null;
+            state.isGameActive = false;
         }
     },
 })
 
-export const { saveClickCount, saveGlobalTime, resetGameState } = mySlice.actions;
+export const 
+{ 
+  saveClickCount, 
+  saveGlobalTime, 
+  saveGameField, 
+  resetGameState 
+} = mySlice.actions;
 
 export default mySlice.reducer
