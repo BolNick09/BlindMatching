@@ -1,0 +1,11 @@
+{
+  "name": "BlindMatching",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "GNU",
+  "nooo_type": "module",
+  "dependencies": {
+    "express": "^5.1.0",
+    "tedious": "^18.6.1"
+  }
+}
