@@ -1,25 +1,23 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import { createBrowserRouter, RouterProvider, Outlet} from "react-router-dom"
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom"
 import DeadEnd from './Pages/DeadEnd'
 import Home from './Pages/Home'
 import NavBar from './Pages/NavBar'
 import ResultsTable from './Pages/ResultsTable'
+import PlayerForm from './PlayerForm'
 
 import { useSelector, useDispatch } from 'react-redux'
-import 
-{ 
+import { 
   saveClickCount, 
   saveGlobalTime, 
   saveGameField, 
   resetGameState 
 } from './slice';
 
-import 
-{ 
+import { 
   FcAlarmClock, 
   FcBinoculars,
   FcCellPhone,
@@ -30,24 +28,21 @@ import
   FcHome,
 } from "react-icons/fc";
 
-function NavbarWrapper()
-{
-    return (
+function NavbarWrapper() {
+  return (
     <div>
-        <NavBar/>
-        <Outlet/>
+      <NavBar/>
+      <Outlet/>
     </div>
-    )
+  )
 }
-
 
 function Card({ icon: IconComponent, isFlipped, onClick }) 
 {
   return (
     <div 
       onClick={onClick}
-      style=
-      {{
+      style={{
         width: '100px', 
         height: '100px', 
         backgroundColor: isFlipped ? 'transparent' : 'white',
@@ -79,8 +74,7 @@ function Game()
     FcHome,
   ];
 
-
-  const { clicks, globalTime, gameField, isGameActive } = useSelector(state => state.reduceSaver);
+  const { clicks, globalTime, gameField, isGameActive, playerName } =  useSelector(state => state.reduceSaver);
   const dispatch = useDispatch();
 
 
@@ -95,48 +89,45 @@ function Game()
       }));
     }
 
-  const pairs = [...icons, ...icons];
-  const shuffled = pairs.sort(() => Math.random() - 0.5);
-  return shuffled.map(icon => 
-  ({
-    icon,
-    isFlipped: false,
-    isMatched: false
-  }));
-};
+    const pairs = [...icons, ...icons];
+    const shuffled = pairs.sort(() => Math.random() - 0.5);
+    return shuffled.map(icon => ({
+      icon,
+      isFlipped: false,
+      isMatched: false
+    }));
+  };
 
   const [cards, setCards] = useState(initializeGame());
   const [flippedIndices, setFlippedIndices] = useState([]);
   const [gameCompleted, setGameCompleted] = useState(false);
   const [timerActive, setTimerActive] = useState(isGameActive);
 
-  // Сохранение состояния игры при изменении
-useEffect(() => {
-  dispatch(saveGameField({
-    cards: cards.map(card => ({
-      ...card,
-      iconName: card.icon.name
-    })),
-    flippedIndices,
-    gameCompleted
-  }));
-}, [cards, flippedIndices, gameCompleted, dispatch]);
-
-  // Запуск таймера при первом клике
   useEffect(() => 
   {
-    // Запуск таймера если:
-    // 1. Игра не завершена
-    // 2. Есть хотя бы один клик
-    // 3. Таймер не активен
+    if (isGameActive) 
+    {
+      dispatch(saveGameField({
+        cards: cards.map(card => ({
+          ...card,
+          iconName: card.icon.name
+        })),
+        flippedIndices,
+        gameCompleted
+      }));
+    }
+  }, [cards, flippedIndices, gameCompleted, dispatch, isGameActive]);
+
+  useEffect(() => 
+  {
     if (!gameCompleted && clicks > 0 && !timerActive) 
       setTimerActive(true);  
+    
 
     let timer;
     if (timerActive) 
     {
-      timer = setInterval(() => 
-      {
+      timer = setInterval(() => {
         dispatch(saveGlobalTime(globalTime + 1));
       }, 1000);
     }
@@ -145,18 +136,17 @@ useEffect(() => {
     {
       if (timer) clearInterval(timer);
     };
-}, [timerActive, gameCompleted, clicks , globalTime, dispatch]);
+  }, [timerActive, gameCompleted, clicks, globalTime, dispatch]);
 
-  // Проверка на завершение игры
+
   useEffect(() => 
   {
-    if (cards.every(card => card.isMatched)) 
-    {
+    if (cards.every(card => card.isMatched)) {
       setGameCompleted(true);
       setTimerActive(false);
       saveResults();
     }
-  }, [cards]);
+  }, [cards, globalTime, clicks, playerName]);
 
   const handleCardClick = (index) => 
   {
@@ -212,45 +202,50 @@ useEffect(() => {
     }
   };
 
-const saveResults = () => 
-{
-  const score = Math.max(1000 - (globalTime * 10 + clicks * 5), 0);
 
-  const newResult = 
+
+  const saveResults = () => 
   {
-    score,
-    date: new Date().toISOString().replace('T', ' ').slice(0, 19),
-    time: globalTime,
-    clicks: clicks
+    const score = Math.max(1000 - (globalTime * 10 + clicks * 5), 0);
+    
+    const newResult = {
+      playerName: playerName || 'Н/д', 
+      score,
+      date: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      time: globalTime,
+      clicks: clicks
+    };
+
+    try 
+    {
+      const storedResults = JSON.parse(localStorage.getItem('memoryGameResults')) || [];
+      localStorage.setItem('memoryGameResults', JSON.stringify([...storedResults, newResult]));
+    } 
+    catch (error) 
+    {
+      console.error('Ошибка при сохранении результатов:', error);
+    }
   };
 
-  const storedResults = JSON.parse(localStorage.getItem('memoryGameResults')) || [];
-  localStorage.setItem('memoryGameResults', JSON.stringify([...storedResults, newResult]));
-};
-
-const resetGame = () => 
-{
+  const resetGame = () => 
+  {
+    dispatch(resetGameState());
     const pairs = [...icons, ...icons];
     const shuffled = pairs.sort(() => Math.random() - 0.5);
-    setCards(shuffled.map(icon => 
-    ({
+    setCards(shuffled.map(icon => ({
       icon,
       isFlipped: false,
       isMatched: false
     })));
-    
     setFlippedIndices([]);
-    dispatch(resetGameState());
     setGameCompleted(false);
     setTimerActive(false);
   };
 
-
   return (
     <>
       <div style={{ marginBottom: '20px' }}>
-        {cards.map((card, index) => 
-        (
+        {cards.map((card, index) => (
           <Card
             key={index}
             icon={card.icon}
@@ -261,8 +256,8 @@ const resetGame = () =>
       </div>
       <div style={{ margin: '20px 0' }}>
         <p>Время: {globalTime} сек.</p>
-        <p>Клики: {clicks}</p>
-        {gameCompleted && <p>Игра завершена! Очки: {Math.max(1000 - (globalTime * 10 + clicks * 5))}</p>}
+        <p>Клики: {clicks}</p>      
+        {gameCompleted && <p>Игра завершена! Очки: {Math.max(1000 - (globalTime * 10 + clicks * 5), 0)}</p>}
       </div>
       <button onClick={resetGame} style={{ padding: '10px 20px', fontSize: '1rem' }}>
         Новая игра
@@ -270,40 +265,42 @@ const resetGame = () =>
     </>
   );
 }
-const router = createBrowserRouter([
-    {
-        path: "/",
-        element: <NavbarWrapper/>,
-        children:[
-            {
-                path: "/",
-                element: <Home />  // Root?
-            },
-            {
-                path: "/game",
-                element: <Game />
-            },
-            {
-              path: "/results",
-              element: <ResultsTable />
-            },
-            {
-                path: "*",
-                element: <DeadEnd />
-            },
-        ]
-      }
-    ]
-  )
 
-function App() 
-{
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <NavbarWrapper/>,
+    children: [
+      {
+        path: "/",
+        element: <Home />
+      },
+      {
+        path: "/form",
+        element: <PlayerForm />
+      },
+      {
+        path: "/game",
+        element: <Game />
+      },
+      {
+        path: "/results",
+        element: <ResultsTable />
+      },
+      {
+        path: "*",
+        element: <DeadEnd />
+      },
+    ]
+  }
+]);
+
+function App() {
   return (
     <div>
       <RouterProvider router={router}/>
     </div>
   )
 }
-
 
 export default App;

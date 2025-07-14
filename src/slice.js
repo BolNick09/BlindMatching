@@ -7,7 +7,8 @@ export const mySlice = createSlice({
         clicks: 0,
         globalTime:0,
         gameField: [],
-        isGameActive: false 
+        isGameActive: false,
+        playerName: ''
     },
     reducers:
     {
@@ -19,11 +20,7 @@ export const mySlice = createSlice({
         {
             state.globalTime = action.payload
         },
-        resetGameState: (state) => 
-        {
-            state.clicks = 0;
-            state.globalTime = 0;
-        },
+
         saveGameField: (state, action) => 
         {
             if (Array.isArray(action.payload?.cards)) 
@@ -31,6 +28,10 @@ export const mySlice = createSlice({
                 state.gameField = action.payload.cards;
                 state.isGameActive = true;
             }
+        },
+        savePlayerName: (state, action) => 
+        { 
+            state.playerName = action.payload;
         },
         resetGameState: (state) => 
         {
@@ -47,7 +48,8 @@ export const
   saveClickCount, 
   saveGlobalTime, 
   saveGameField, 
-  resetGameState 
+  resetGameState,
+  savePlayerName
 } = mySlice.actions;
 
 export default mySlice.reducer
